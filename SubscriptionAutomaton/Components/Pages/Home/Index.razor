@@ -1,58 +1,112 @@
 ﻿@page "/"
 @using System.Runtime.CompilerServices
+@using Application.Services.Abstractions
 @using Application.StateMachines
 @using Application.StateMachines.Managers
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using SubscriptionAutomaton.Common.Services
+
+@inject ISubscriptionsService subscriptionsService
+@inject CurrentSubscriptionService currentSubscriptionService
+@inject NavigationManager navigationManager
+
 @rendermode InteractiveServer
 @attribute [Authorize]
 
-<h3>Состояние подписки</h3>
-
-<p>Текущее состояние: <strong>@subscriptionManager.CurrentState</strong></p>
-
-@if (subscriptionManager.NeedRegistration)
-{
-    <span class="alert-info">Необходимо завершить регистрацию. Для этого нажмите кнопку "Завершить регистрацию"</span>
-    <br />
-    <button class="btn btn-primary" >Завершить регистрацию</button>
-}
-@if (subscriptionManager.CanSelectPlan)
-{
-    <span class="alert-info">
-        Регистрация завершена успаешно. Для того, чтобы получить возможность пользоваться сервисом,
-        необходимо выбрать тарифный план.
-    </span>
-    <br />
-    if (!string.IsNullOrEmpty(selectPlanErrorMessage))
-    {
-        <span class="alert-danger">@selectPlanErrorMessage</span>
-        <br />
+<style>
+    .subscription-status-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: url('/path-to-background-image') no-repeat center center fixed;
+        background-size: cover;
     }
-    <select class="form-control" @bind="selectedPlan">
-        <option value="0">Основной</option>
-        <option value="1">Расширенный</option>
-        <option value="2">Максимальный</option>
-    </select>
-    <button class="btn btn-primary">Выбрать план</button>
-}
-@if (subscriptionManager.NeedPay)
-{
-    <button class="btn btn-primary">Завершить оплату</button>
-}
-@if (subscriptionManager.IsSubscriptionExpired)
-{
-    <button class="btn btn-primary">Подписка истекла</button>
-}
+
+    .subscription-content {
+        text-align: center;
+        background-color: rgba(255, 255, 255, 0.8); /* Полупрозрачный фон для контента */
+        padding: 20px;
+        border-radius: 10px;
+    }
+
+        .subscription-content img {
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+</style>
+
+<div class="subscription-status-container">
+    @if(subscriptionManager is not null)
+    {
+        @if (subscriptionManager.NeedRegistration)
+        {
+            <SubscriptionStatus ImagePath="images/success.png"
+                                Message="Необходимо завершить регистрацию."
+                                ButtonText="Завершить регистрацию"
+                                OnButtonClick="CompleteRegistration" />
+        }
+        @if (subscriptionManager.CanSelectPlan)
+        {
+            <SubscriptionStatus ImagePath="images/fail.png"
+                                Message="Регистрация завершена успешно. Выберите тарифный план."
+                                ButtonText="Выбрать план"
+                                ShowErrorMessage="true"
+                                OnButtonClick="SelectPlan" />
+        }
+        @if (subscriptionManager.NeedPay)
+        {
+            <SubscriptionStatus ImagePath="images/fail.png"
+                                Message="Завершите оплату для продолжения."
+                                ButtonText="Завершить оплату"
+                                OnButtonClick="CompletePayment" />
+        }
+        @if (subscriptionManager.IsSubscriptionExpired)
+        {
+            <SubscriptionStatus ImagePath="images/fail.png"
+                                Message="Ваша подписка истекла. Возобновите подписку."
+                                ButtonText="Подписка истекла"
+                                OnButtonClick="RenewSubscription" />
+        }
+    }
+</div>
 
 @code {
-    private string? selectPlanErrorMessage;
-    private string selectedPlan = string.Empty;
-    private int? selectedPlanId => int.TryParse(selectedPlan, out int value) ? value : default(int?);
+    private SubscriptionManager? subscriptionManager { get; set; }
+    private Domain.Entities.Subscription? subscription { get; set; }
 
-    SubscriptionManager subscriptionManager = new SubscriptionManager(new SubscriptionStateMachine(GetState()));
-
-    static SubscriptionStateMachine.State GetState()
+    protected override async Task OnInitializedAsync()
     {
-        return SubscriptionStateMachine.State.NotRegistered;
+        subscription = await currentSubscriptionService.GetAsync();
+        var state = (SubscriptionStateMachine.State)subscription!.SubscriptionStateId;
+        subscriptionManager = new SubscriptionManager(new SubscriptionStateMachine(state));
+    } 
+
+    private async Task CompleteRegistration()
+    {
+        subscriptionManager!.StateMachine.Fire(SubscriptionStateMachine.Trigger.Register);
+        subscription!.SubscriptionStateId = (short)subscriptionManager.StateMachine.CurrentState;
+        await subscriptionsService.UpdateAsync(subscription);
+    }
+
+    private void SelectPlan()
+    {
+        navigationManager.NavigateTo("plan-selection");
+    }
+
+    private Task CompletePayment()
+    {
+        // Логика завершения оплаты
+        return Task.CompletedTask;
+    }
+
+    private Task RenewSubscription()
+    {
+        // Логика возобновления подписки
+        return Task.CompletedTask;
     }
 }

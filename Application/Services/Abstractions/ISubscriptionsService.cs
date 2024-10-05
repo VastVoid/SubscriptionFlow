@@ -4,6 +4,8 @@ namespace Application.Services.Abstractions;
 
 public interface ISubscriptionsService
 {
-    Task<Subscription?> Get(long id);
-    Task<Subscription?> Get(string login);
+    Task<Subscription?> GetAsync(long id);
+    Task<Subscription?> GetAsync(string login);
+    Task<long> AddAsync(Subscription subscription);
+    Task<long> UpdateAsync(Subscription subscription);
 }

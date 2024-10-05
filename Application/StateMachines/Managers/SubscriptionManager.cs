@@ -2,26 +2,25 @@
 
 public class SubscriptionManager
 {
-    private SubscriptionStateMachine _stateMachine;
+    public SubscriptionStateMachine StateMachine;
 
     public SubscriptionManager(SubscriptionStateMachine stateMachine)
     {
-        _stateMachine = stateMachine;
-
+        StateMachine = stateMachine;
     }
 
-    public SubscriptionStateMachine.State CurrentState => _stateMachine.CurrentState;
+    public SubscriptionStateMachine.State CurrentState => StateMachine.CurrentState;
 
-    public bool NeedRegistration => _stateMachine.CurrentState == SubscriptionStateMachine.State.NotRegistered;
+    public bool NeedRegistration => StateMachine.CurrentState == SubscriptionStateMachine.State.NotRegistered;
 
-    public bool CanSelectPlan => _stateMachine.CanFire(SubscriptionStateMachine.Trigger.SelectPlan);
+    public bool CanSelectPlan => StateMachine.CanFire(SubscriptionStateMachine.Trigger.SelectPlan);
 
-    public bool NeedPay => _stateMachine.CanFire(SubscriptionStateMachine.Trigger.InitPayment)
-        || _stateMachine.CurrentState == SubscriptionStateMachine.State.PaymentPending;
+    public bool NeedPay => StateMachine.CanFire(SubscriptionStateMachine.Trigger.InitPayment)
+        || StateMachine.CurrentState == SubscriptionStateMachine.State.PaymentPending;
 
-    public bool IsSubscriptionActive => _stateMachine.CurrentState == SubscriptionStateMachine.State.SubscriptionActive;
+    public bool IsSubscriptionActive => StateMachine.CurrentState == SubscriptionStateMachine.State.SubscriptionActive;
 
-    public bool IsSubscriptionExpired => _stateMachine.CurrentState == SubscriptionStateMachine.State.SubscriptionExpired;
+    public bool IsSubscriptionExpired => StateMachine.CurrentState == SubscriptionStateMachine.State.SubscriptionExpired;
 
-    public bool CanCancel => _stateMachine.CanFire(SubscriptionStateMachine.Trigger.CancelSubscription);
+    public bool CanCancel => StateMachine.CanFire(SubscriptionStateMachine.Trigger.CancelSubscription);
 }

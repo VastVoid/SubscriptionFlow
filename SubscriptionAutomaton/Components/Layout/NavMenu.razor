@@ -1,5 +1,4 @@
 ﻿@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
-@using SubscriptionAutomaton.Extensions.Sessions
 @using Microsoft.AspNetCore.Components.Authorization
 @inject ProtectedSessionStorage sessionStorage
 @inject NavigationManager navigation
@@ -30,16 +29,3 @@
         </div>
     </nav>
 </div>
-
-@code{
-    private bool isAuthenticated;
-        
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        isAuthenticated = await sessionStorage.IsAuth();
-        if (!isAuthenticated && navigation.Uri.Split("/").Last(pathPart => !string.IsNullOrEmpty(pathPart)).ToLower() != "login")
-        {
-            navigation.NavigateTo("login");
-        }
-    }
-}

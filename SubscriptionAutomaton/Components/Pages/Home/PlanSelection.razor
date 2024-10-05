@@ -1,0 +1,62 @@
+﻿@page "/plan-selection"
+@using System.Runtime.CompilerServices
+@using Application.Services.Abstractions
+@using Application.StateMachines
+@using Application.StateMachines.Managers
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using SubscriptionAutomaton.Common.Services
+
+@inject ISubscriptionsService subscriptionsService
+@inject NavigationManager navigationManager
+@inject CurrentSubscriptionService currentSubscriptionService
+
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<h3>Выбор тарифного плана</h3>
+
+<select class="form-control" @bind="selectedPlan">
+    <option value="0">Основной</option>
+    <option value="1">Расширенный</option>
+    <option value="2">Максимальный</option>
+</select>
+<button class="btn btn-primary" @onclick="OnButtonClick">Выбрать план</button>
+
+
+@code {
+    private SubscriptionManager? subscriptionManager;
+    private Domain.Entities.Subscription? subscription;
+
+    private string selectedPlan;
+
+    protected override async Task OnInitializedAsync()
+    {
+        subscription = await currentSubscriptionService.GetAsync();
+        var state = (SubscriptionStateMachine.State)subscription!.SubscriptionStateId;
+        subscriptionManager = new SubscriptionManager(new SubscriptionStateMachine(state));
+        if (!subscriptionManager.CanSelectPlan)
+        {
+            RedirectToHome();
+        }
+    }
+
+    private async void OnButtonClick()
+    {
+        short.TryParse(selectedPlan, out short selectedPlanId);
+
+        subscriptionManager!.StateMachine.Fire(SubscriptionStateMachine.Trigger.SelectPlan);
+
+        subscription!.PlanId = selectedPlanId;
+        subscription.SubscriptionStateId = (short)subscriptionManager.StateMachine.CurrentState;
+        await subscriptionsService.UpdateAsync(subscription);
+        
+        RedirectToHome();
+    }
+
+    private void RedirectToHome()
+    {
+        navigationManager.NavigateTo("/");
+    }
+}

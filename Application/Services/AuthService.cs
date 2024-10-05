@@ -5,20 +5,19 @@ using Persistence;
 
 namespace Application.Services;
 
-public sealed class AuthService(PostgreDbContext dbContext) : IAuthService
+public sealed class AuthService(PostgreDbContext dbContext, ISubscriptionsService subscriptionsService) : IAuthService
 {
-    private PostgreDbContext _dbContext = dbContext;
+    private ISubscriptionsService _subscriptionsService = subscriptionsService;
     public async Task<AuthResult> LogIn(string login)
     {
-        var existsSubscription = await _dbContext.Subscribers.FirstOrDefaultAsync(item => item.Login == login);
+        var existsSubscription = await _subscriptionsService.GetAsync(login);
         if (existsSubscription != null)
         {
             return new(true, existsSubscription.Id, existsSubscription.Login);
         }
 
-        await _dbContext.Subscribers.AddAsync(
-            new Domain.Entities.Subscription(0, login, 0, DateTimeOffset.Now, DateTimeOffset.Now));
-        var subscriptionId = await _dbContext.SaveChangesAsync();
+        var subscriptionId = await _subscriptionsService.AddAsync(new Domain.Entities.Subscription(0, login, 0, null, false, 
+            null, DateTimeOffset.Now, DateTimeOffset.Now, null));
 
         return new(true, subscriptionId, login);
     }

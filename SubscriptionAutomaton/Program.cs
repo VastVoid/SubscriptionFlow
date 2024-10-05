@@ -1,16 +1,14 @@
 using Application.Services;
-using Application.Services.Abstractions;
 using Application.StateMachines;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Persistence;
 using Persistence.Common.Configuration.Connection;
 using Persistence.Common.Configuration.Connection.PostgreSql;
 using SubscriptionAutomaton.Common.Clock;
+using SubscriptionAutomaton.Common.Services;
 using SubscriptionAutomaton.Common.Simulation;
 using SubscriptionAutomaton.Components;
-using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,9 +22,8 @@ services.AddSingleton<SubscriptionStateMachine>()
 
 AddAuthorization(services);
 
-services.AddScoped<ProtectedSessionStorage>();
-services.AddSingleton<IClock, SimulatedClock>();
-services.AddSingleton<CalendarSimulator>();
+RegisteredCommonServices(services);
+
 services.AddHttpContextAccessor();
 
 RegisterPostgres(services, configuration);
@@ -91,4 +88,13 @@ static void AddAuthorization(IServiceCollection serviceCollection)
         });
     serviceCollection.AddAuthorization();
     serviceCollection.AddCascadingAuthenticationState();
+}
+
+static void RegisteredCommonServices(IServiceCollection services)
+{
+    services.AddScoped<ProtectedSessionStorage>();
+    services.AddSingleton<IClock, SimulatedClock>();
+    services.AddSingleton<CalendarSimulator>();
+    services.AddScoped<ClaimUserService>();
+    services.AddScoped<CurrentSubscriptionService>();
 }

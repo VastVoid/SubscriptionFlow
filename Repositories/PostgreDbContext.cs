@@ -40,12 +40,12 @@ public class PostgreDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        var conectionString = _connectionStringBuilder.Create();
+        var conectionString = _connectionStringBuilder?.Create();
         optionsBuilder.UseNpgsql(conectionString,
             option => option.CommandTimeout(TimeSpan.FromSeconds(10).Seconds));
     }
 
-    private string ConvertToSnakeCase(string name)
+    private static string ConvertToSnakeCase(string name)
     {
         return string.Concat(name.Select((x, i) => i > 0 && char.IsUpper(x) ? "_" + x : x.ToString())).ToLower();
     }
