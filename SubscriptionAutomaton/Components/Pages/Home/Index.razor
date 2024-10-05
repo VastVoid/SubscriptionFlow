@@ -1,0 +1,58 @@
+﻿@page "/"
+@using System.Runtime.CompilerServices
+@using Application.StateMachines
+@using Application.StateMachines.Managers
+@using Microsoft.AspNetCore.Authorization
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<h3>Состояние подписки</h3>
+
+<p>Текущее состояние: <strong>@subscriptionManager.CurrentState</strong></p>
+
+@if (subscriptionManager.NeedRegistration)
+{
+    <span class="alert-info">Необходимо завершить регистрацию. Для этого нажмите кнопку "Завершить регистрацию"</span>
+    <br />
+    <button class="btn btn-primary" >Завершить регистрацию</button>
+}
+@if (subscriptionManager.CanSelectPlan)
+{
+    <span class="alert-info">
+        Регистрация завершена успаешно. Для того, чтобы получить возможность пользоваться сервисом,
+        необходимо выбрать тарифный план.
+    </span>
+    <br />
+    if (!string.IsNullOrEmpty(selectPlanErrorMessage))
+    {
+        <span class="alert-danger">@selectPlanErrorMessage</span>
+        <br />
+    }
+    <select class="form-control" @bind="selectedPlan">
+        <option value="0">Основной</option>
+        <option value="1">Расширенный</option>
+        <option value="2">Максимальный</option>
+    </select>
+    <button class="btn btn-primary">Выбрать план</button>
+}
+@if (subscriptionManager.NeedPay)
+{
+    <button class="btn btn-primary">Завершить оплату</button>
+}
+@if (subscriptionManager.IsSubscriptionExpired)
+{
+    <button class="btn btn-primary">Подписка истекла</button>
+}
+
+@code {
+    private string? selectPlanErrorMessage;
+    private string selectedPlan = string.Empty;
+    private int? selectedPlanId => int.TryParse(selectedPlan, out int value) ? value : default(int?);
+
+    SubscriptionManager subscriptionManager = new SubscriptionManager(new SubscriptionStateMachine(GetState()));
+
+    static SubscriptionStateMachine.State GetState()
+    {
+        return SubscriptionStateMachine.State.NotRegistered;
+    }
+}

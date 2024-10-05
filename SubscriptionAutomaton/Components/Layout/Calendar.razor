@@ -1,0 +1,83 @@
+﻿@using System.Timers;
+@using SubscriptionAutomaton.Common.Simulation
+
+@inject CalendarSimulator calendarSimulator
+@rendermode InteractiveServer
+
+<div class="container ">
+    <div class="row justify-content-end">
+        <div id="calendar" class="col-md-3 text-center">
+            <h4 id="current-date">@calendarSimulator.GetCurrentTime()</h4>
+        </div>
+        <div class="col-md-5 text-center row">
+            <div class="col-md-3">
+                <a href="javascript:void(0);" id="prevDay" @onclick="NextDay" class="btn btn-small btn-primary"><small>След. день</small></a>
+            </div>
+            <div class="col-md-3">
+                <a href="javascript:void(0);" id="prevWeek" @onclick="NextWeek" class="btn btn-small btn-warning"><small>След. неделя</small></a>
+            </div>
+            <div class="col-md-3">
+                <a href="javascript:void(0);" id="prevMonth" @onclick="NextMonth" class="btn btn-small btn-danger"><small>След. месяц</small></a>
+            </div>
+            <div class="col-md-3">
+                <a href="javascript:void(0);" id="reset" @onclick="Reset" class="btn btn-small btn-secondary"><small>Сбросить</small></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    void NextDay()
+    {
+        calendarSimulator.NextDay();
+        StateHasChanged();
+    }
+
+    void NextWeek()
+    {
+        calendarSimulator.NextWeek();
+        StateHasChanged();
+    }
+
+    void NextMonth()
+    {
+        calendarSimulator.NextMonth();
+        StateHasChanged();
+    }
+
+    void Reset()
+    {
+        calendarSimulator.Reset();
+        StateHasChanged();
+    }
+
+    private string lastUpdated;
+    private Timer timer;
+
+    protected override void OnInitialized()
+    {
+        // Инициализируем таймер с интервалом 10 секунд
+        timer = new Timer(100); // 10000 миллисекунд = 10 секунд
+        timer.Elapsed += OnTimerElapsed;
+        timer.AutoReset = true;
+        timer.Start();
+
+    }
+
+    private void OnTimerElapsed(object sender, ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        if (timer != null)
+        {
+            timer.Stop();
+            timer.Dispose();
+        }
+    }
+}

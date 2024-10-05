@@ -1,0 +1,46 @@
+﻿@page "/home"
+@using SubscriptionFlow.Subscriptions
+@inject SubscriptionAutomaton subscriptionAutomaton
+
+<h3>Subscription Process</h3>
+
+<p>Текущее состояние: <strong>@subscriptionAutomaton.CurrentState</strong></p>
+
+@if (subscriptionAutomaton.CurrentState == SubscriptionState.NotRegistered)
+{
+    <button class="btn btn-primary" @onclick="Register">Завершить регистрацию</button>
+}
+else if (subscriptionAutomaton.CurrentState == SubscriptionState.Registered)
+{
+    <button class="btn btn-primary" @onclick="SelectPlan">Выбрать план</button>
+}
+else if (subscriptionAutomaton.CurrentState == SubscriptionState.PlanSelected)
+{
+    <button class="btn btn-primary" @onclick="CompletePayment">Завершить оплату</button>
+}
+else if (subscriptionAutomaton.CurrentState == SubscriptionState.SubscriptionActive)
+{
+    <button class="btn btn-primary" @onclick="ExpireSubscription">Подписка истекла</button>
+}
+
+@code {
+    void Register()
+    {
+        subscriptionAutomaton.HandleEvent(SubscriptionEvent.RegistrationCompleted);
+    }
+
+    void SelectPlan()
+    {
+        subscriptionAutomaton.HandleEvent(SubscriptionEvent.PlanSelected);
+    }
+
+    void CompletePayment()
+    {
+        subscriptionAutomaton.HandleEvent(SubscriptionEvent.PaymentCompleted);
+    }
+
+    void ExpireSubscription()
+    {
+        subscriptionAutomaton.HandleEvent(SubscriptionEvent.SubscriptionExpired);
+    }
+}

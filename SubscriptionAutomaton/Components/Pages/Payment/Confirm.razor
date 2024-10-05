@@ -1,0 +1,51 @@
+﻿@page "/payment/confirm"
+@using Microsoft.AspNetCore.Authorization
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<link rel="stylesheet" href="payment.css" />
+
+<h3>Подтверждение оплаты</h3>
+
+<div class="card-container">
+    <div class="card">
+        <div class="card-content">
+            <div class="input-group">
+                <label for="cardNumber">Card Number</label>
+                <input id="cardNumber" @bind="cardNumber" placeholder="1234 5678 9876 5432" maxlength="19" />
+            </div>
+
+            <div class="input-group">
+                <label for="cardName">Cardholder Name</label>
+                <input id="cardName" @bind="cardName" placeholder="John Doe" />
+            </div>
+
+            <div class="input-group-row">
+                <div class="input-group">
+                    <label for="expiryDate">Expiry Date</label>
+                    <input id="expiryDate" @bind="expiryDate" placeholder="MM/YY" maxlength="5" />
+                </div>
+
+                <div class="input-group">
+                    <label for="cvv">CVV</label>
+                    <input id="cvv" @bind="cvv" placeholder="123" maxlength="3" />
+                </div>
+            </div>
+
+            <button @onclick="ProcessPayment">Pay Now</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string cardNumber;
+    private string cardName;
+    private string expiryDate;
+    private string cvv;
+
+    private void ProcessPayment()
+    {
+        // Логика обработки платежа
+        Console.WriteLine($"Card Number: {cardNumber}, Name: {cardName}, Expiry: {expiryDate}, CVV: {cvv}");
+    }
+}

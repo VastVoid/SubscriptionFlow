@@ -1,0 +1,72 @@
+﻿@page "/login"
+@using Application.Services.Abstractions
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Persistence
+@using SubscriptionAutomaton.Models.ViewModels
+@using System.Security.Claims
+@inject IAuthService authService
+@inject NavigationManager navigationManager
+
+<link rel="stylesheet" href="login.css" />
+
+<div class="login-container">
+    <div class="login-box">
+        <EditForm Model="Model" OnValidSubmit="Authenticate" FormName="LoginForm">
+            <DataAnnotationsValidator />
+            <h2>Вход</h2>
+            <div class="input-group">
+                <label for="Login">Логин</label>
+                <InputText @bind-Value="Model.Login" placeholder="введите ваш логин" />
+                <ValidationMessage For="() => Model.Login" />
+            </div>
+            <span>@errorMessage</span>
+            <button type="submit">Войти</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    public LoginViewModel Model { get; set; } = new();
+
+    public string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        base.OnInitializedAsync();
+        if (HttpContext.User.Identity.IsAuthenticated)
+        {
+            navigationManager.NavigateTo("");
+        }
+    }
+
+    private async Task Authenticate()
+    {
+        var authResult = await authService.LogIn(Model.Login!);
+        if (authResult.Success)
+        {
+            await HttpContext!.SignInAsync(
+                new ClaimsPrincipal(
+                    new ClaimsIdentity(
+                        new List<Claim>()
+                                {
+                            new Claim(ClaimTypes.Name, authResult.Login),
+                            new Claim("subscriptionId", authResult.SubscriptionId.ToString())
+                                },
+                        CookieAuthenticationDefaults.AuthenticationScheme)),
+                new AuthenticationProperties
+                    {
+                        IsPersistent = false
+                    });
+            navigationManager.NavigateTo("");
+        }
+        else
+        {
+            errorMessage = "Произошла ошибка при авторизации. Попробуйте позднее";
+        }
+    }
+}
