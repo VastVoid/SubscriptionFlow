@@ -11,9 +11,14 @@ public class CalendarSimulator
         _clock = clock;
     }
 
-    public string GetCurrentTime()
+    public string GetCurrentTimeString()
     {
         return _clock.Now.ToString();
+    }
+
+    public DateTime GetCurrentDateTime()
+    {
+        return _clock.Now;
     }
 
     public void NextDay()

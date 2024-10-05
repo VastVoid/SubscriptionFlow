@@ -1,5 +1,6 @@
 ﻿using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence.Common.Configuration.Connection;
 
@@ -22,8 +23,12 @@ public class PostgreDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var dateTimeOffsetConverter = new ValueConverter<DateTimeOffset, DateTime>(
-           v => v.UtcDateTime,
-           v => new DateTimeOffset(v, TimeSpan.Zero));
+            v => v.UtcDateTime,
+            v => new DateTimeOffset(v, TimeSpan.Zero));
+        
+        var nullabeDateTimeOffsetConverter = new ValueConverter<DateTimeOffset?, DateTime?>(
+            v => v.HasValue ? v.Value.UtcDateTime : default,
+            v => v.HasValue ? new DateTimeOffset(v.Value, TimeSpan.Zero) : default);
 
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
@@ -32,7 +37,11 @@ public class PostgreDbContext : DbContext
                 property.SetColumnName(ConvertToSnakeCase(property.Name));
                 if (property.ClrType == typeof(DateTimeOffset))
                 {
-                    property.SetValueConverter(dateTimeOffsetConverter);       
+                    property.SetValueConverter(dateTimeOffsetConverter);
+                }
+                if (property.ClrType == typeof(DateTimeOffset?))
+                {
+                    property.SetValueConverter(nullabeDateTimeOffsetConverter);
                 }
             }
         }

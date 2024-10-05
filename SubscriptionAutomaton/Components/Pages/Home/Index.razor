@@ -65,6 +65,13 @@
                                 ButtonText="Завершить оплату"
                                 OnButtonClick="CompletePayment" />
         }
+        @if (subscriptionManager.IsSubscriptionActive)
+        {
+            <SubscriptionStatus ImagePath="images/success.png"
+                                Message="Ваша активна!"
+                                ButtonText="Подписка истекла"
+                                OnButtonClick="() => {}" />
+        }
         @if (subscriptionManager.IsSubscriptionExpired)
         {
             <SubscriptionStatus ImagePath="images/fail.png"
@@ -98,10 +105,9 @@
         navigationManager.NavigateTo("plan-selection");
     }
 
-    private Task CompletePayment()
+    private void CompletePayment()
     {
-        // Логика завершения оплаты
-        return Task.CompletedTask;
+        navigationManager.NavigateTo("/payment/confirm");
     }
 
     private Task RenewSubscription()

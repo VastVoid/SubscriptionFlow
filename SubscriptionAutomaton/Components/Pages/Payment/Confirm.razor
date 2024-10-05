@@ -1,7 +1,19 @@
 ﻿@page "/payment/confirm"
+@using Application.Services.Abstractions
+@using Application.StateMachines
+@using Application.StateMachines.Managers
+@using Domain.Entities
 @using Microsoft.AspNetCore.Authorization
+@using SubscriptionAutomaton.Common.Services
+@using SubscriptionAutomaton.Common.Simulation
+@using SubscriptionAutomaton.Models.ViewModels
 @rendermode InteractiveServer
 @attribute [Authorize]
+
+@inject ISubscriptionsService subscriptionsService
+@inject NavigationManager navigationManager
+@inject CurrentSubscriptionService currentSubscriptionService
+@inject CalendarSimulator calendarSimulator
 
 <link rel="stylesheet" href="payment.css" />
 
@@ -9,43 +21,69 @@
 
 <div class="card-container">
     <div class="card">
-        <div class="card-content">
-            <div class="input-group">
-                <label for="cardNumber">Card Number</label>
-                <input id="cardNumber" @bind="cardNumber" placeholder="1234 5678 9876 5432" maxlength="19" />
-            </div>
-
-            <div class="input-group">
-                <label for="cardName">Cardholder Name</label>
-                <input id="cardName" @bind="cardName" placeholder="John Doe" />
-            </div>
-
-            <div class="input-group-row">
+        <EditForm Model="Model" OnValidSubmit="ProcessPayment" FormName="PaymentForm">
+            <DataAnnotationsValidator />
+            <div class="card-content">
                 <div class="input-group">
-                    <label for="expiryDate">Expiry Date</label>
-                    <input id="expiryDate" @bind="expiryDate" placeholder="MM/YY" maxlength="5" />
+                    <label for="cardNumber">Номер карты</label>
+                    <InputText @bind-Value="Model.CardNumber" placeholder="1234 5678 9876 5432"/>
+                    <ValidationMessage For="() => Model.CardNumber" />
                 </div>
-
                 <div class="input-group">
-                    <label for="cvv">CVV</label>
-                    <input id="cvv" @bind="cvv" placeholder="123" maxlength="3" />
+                    <label for="cardName">Владелец карты</label>
+                    <InputText @bind-Value="Model.CardName" placeholder="Имя Фамилия" />
                 </div>
-            </div>
+                <div class="input-group-row">
+                    <div class="input-group">
+                        <label for="expiryDate">Срок действия</label>
+                        <InputText @bind-Value="Model.ExpiryDate" placeholder="MM/YY" />
+                    </div>
 
-            <button @onclick="ProcessPayment">Pay Now</button>
-        </div>
+                    <div class="input-group">
+                        <label for="cvv">CVV</label>
+                        <InputText @bind-Value="Model.Cvv" placeholder="123" />
+                    </div>
+                </div>
+                <button type="submit">Оплатить</button>
+            </div>
+        </EditForm>
     </div>
 </div>
 
 @code {
-    private string cardNumber;
-    private string cardName;
-    private string expiryDate;
-    private string cvv;
+    private SubscriptionManager? subscriptionManager;
+    private Subscription? subscription;
 
-    private void ProcessPayment()
+    [SupplyParameterFromForm]
+    public PaymentViewModel Model { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        // Логика обработки платежа
-        Console.WriteLine($"Card Number: {cardNumber}, Name: {cardName}, Expiry: {expiryDate}, CVV: {cvv}");
+        subscription = await currentSubscriptionService.GetAsync();
+        var state = (SubscriptionStateMachine.State)subscription!.SubscriptionStateId;
+        subscriptionManager = new SubscriptionManager(new SubscriptionStateMachine(state));
+        if (!subscriptionManager.NeedPay)
+        {
+            RedirectToHome();
+        }
+        subscriptionManager.StateMachine.Fire(SubscriptionStateMachine.Trigger.InitPayment);
     }
-}
+
+    private async void ProcessPayment()
+    {
+        subscriptionManager.StateMachine.Fire(SubscriptionStateMachine.Trigger.SuccessPayment);
+        subscriptionManager.StateMachine.Fire(SubscriptionStateMachine.Trigger.ActivateSubscription);
+        var newState = subscriptionManager.StateMachine.CurrentState;
+
+        subscription.ExpiredAt = calendarSimulator.GetCurrentDateTime().AddDays(30);
+        subscription.SubscriptionStateId = (short)newState;
+        await subscriptionsService.UpdateAsync(subscription);
+
+        RedirectToHome();
+    }
+
+    private void RedirectToHome()
+    {
+        navigationManager.NavigateTo("/");
+    }
+    }

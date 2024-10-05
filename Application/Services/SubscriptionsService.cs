@@ -39,7 +39,7 @@ public sealed class SubscriptionsService(PostgreDbContext dbContext) : ISubscrip
             throw new ArgumentException($"{nameof(subscription)} with id = {subscription.Id} is not exists");
         }
 
-        subscription.UpdatedAt = DateTimeOffset.Now;
+        subscription.UpdatedAt = DateTime.Now;
         _dbContext.Subscribers.Update(subscription);
 
         await _dbContext.SaveChangesAsync();
