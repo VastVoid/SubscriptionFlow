@@ -16,16 +16,47 @@
 
     [Parameter]
     public string ErrorMessage { get; set; }
+
+    [Parameter]
+    public Style ButtonStyle { get; set; } = Style.Primary;
+
+    public enum Style
+    {
+        Primary,
+        Secondary,
+        Success,
+        Warning,
+        Error,
+        Info
+    }
+
+    private Dictionary<Style, string> _styles = new()
+    {
+        {Style.Primary, "primary"},
+        {Style.Secondary, "secondary"},
+        {Style.Success, "success"},
+        {Style.Warning, "warning"},
+        {Style.Error, "danger"},
+        {Style.Info, "info"},
+    };
 }
 
 <div class="subscription-content">
-    <img src="@ImagePath" alt="Status Image" />
-    <p>@Message</p>
+    @if (!string.IsNullOrEmpty(ImagePath))
+    {
+        <img src="@ImagePath" alt="Status Image" />
+    }
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p>@Message</p>
+    }
     @if (ShowErrorMessage && !string.IsNullOrEmpty(ErrorMessage))
     {
         <span class="alert-danger">@ErrorMessage</span>
         <br />
     }
-    <button class="btn btn-primary" @onclick="OnButtonClick">@ButtonText</button>
+    @if (!OnButtonClick.Equals(EventCallback.Empty))
+    {
+        <button class="btn btn-@(_styles[ButtonStyle])" @onclick="OnButtonClick">@ButtonText</button>
+    }
 </div>
-

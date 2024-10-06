@@ -23,6 +23,7 @@
         height: 100vh;
         background: url('/path-to-background-image') no-repeat center center fixed;
         background-size: cover;
+        flex-direction: column;
     }
 
     .subscription-content {
@@ -61,23 +62,23 @@
         @if (subscriptionManager.NeedPay)
         {
             <SubscriptionStatus ImagePath="images/fail.png"
-                                Message="Завершите оплату для продолжения."
-                                ButtonText="Завершить оплату"
+                                Message="@(subscriptionManager.IsSubscriptionExpired 
+                                ? "Ваша подписка истекла. Возобновите подписку."
+                                : "Завершите оплату для продолжения.")"
+                                ButtonText="Оплатить"
                                 OnButtonClick="CompletePayment" />
         }
         @if (subscriptionManager.IsSubscriptionActive)
         {
             <SubscriptionStatus ImagePath="images/success.png"
-                                Message="Ваша активна!"
-                                ButtonText="Подписка истекла"
-                                OnButtonClick="() => {}" />
+                                Message="Ваша подписка активна!"
+                                OnButtonClick="EventCallback.Empty" />
         }
-        @if (subscriptionManager.IsSubscriptionExpired)
+        @if (subscriptionManager.CanCancel)
         {
-            <SubscriptionStatus ImagePath="images/fail.png"
-                                Message="Ваша подписка истекла. Возобновите подписку."
-                                ButtonText="Подписка истекла"
-                                OnButtonClick="RenewSubscription" />
+            <SubscriptionStatus ButtonText="Отменить подписку"
+                                OnButtonClick="CancelSubscription"
+                                ButtonStyle="SubscriptionStatus.Style.Error"/>
         }
     }
 </div>
@@ -96,7 +97,7 @@
     private async Task CompleteRegistration()
     {
         subscriptionManager!.StateMachine.Fire(SubscriptionStateMachine.Trigger.Register);
-        subscription!.SubscriptionStateId = (short)subscriptionManager.StateMachine.CurrentState;
+        subscription!.SubscriptionStateId = (short)subscriptionManager.CurrentState;
         await subscriptionsService.UpdateAsync(subscription);
     }
 
@@ -110,9 +111,15 @@
         navigationManager.NavigateTo("/payment/confirm");
     }
 
-    private Task RenewSubscription()
+    private async Task CancelSubscription()
     {
-        // Логика возобновления подписки
-        return Task.CompletedTask;
+        subscriptionManager!.StateMachine.Fire(SubscriptionStateMachine.Trigger.CancelSubscription);
+
+        subscription.IsActive = false;
+        subscription.SubscriptionStateId = (short)subscriptionManager.CurrentState;
+        subscription.PlanId = null;
+        await subscriptionsService.UpdateAsync(subscription);
+
+        navigationManager.Refresh();
     }
 }

@@ -77,6 +77,7 @@
 
         subscription.ExpiredAt = calendarSimulator.GetCurrentDateTime().AddDays(30);
         subscription.SubscriptionStateId = (short)newState;
+        subscription.IsActive = true;
         await subscriptionsService.UpdateAsync(subscription);
 
         RedirectToHome();

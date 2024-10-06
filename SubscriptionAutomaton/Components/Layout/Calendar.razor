@@ -56,12 +56,10 @@
 
     protected override void OnInitialized()
     {
-        // Инициализируем таймер с интервалом 10 секунд
-        timer = new Timer(100); // 10000 миллисекунд = 10 секунд
+        timer = new Timer(100);
         timer.Elapsed += OnTimerElapsed;
         timer.AutoReset = true;
         timer.Start();
-
     }
 
     private void OnTimerElapsed(object sender, ElapsedEventArgs e)

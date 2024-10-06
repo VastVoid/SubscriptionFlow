@@ -1,4 +1,15 @@
-﻿@inherits LayoutComponentBase
+﻿@using Application.Services.Abstractions
+@using Application.StateMachines
+@using Application.StateMachines.Managers
+@using SubscriptionAutomaton.Common.Services
+@using SubscriptionAutomaton.Common.Simulation
+@using System.Timers
+
+@inherits LayoutComponentBase
+@inject CurrentSubscriptionService currentSubscriptionService
+@inject CalendarSimulator calendarSimulator
+@inject NavigationManager navigationManager
+@inject ISubscriptionsService subscriptionsService
 
 <div class="page">
     <div class="sidebar">
@@ -8,7 +19,7 @@
     <main>
         <div class="top-row ps-3 navbar navbar-dark">
             <div class="container-fluid">
-                <Calendar/>
+                <Calendar />
             </div>
         </div>
         <article class="content px-4">
@@ -22,3 +33,34 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+
+    private SubscriptionManager? subscriptionManager { get; set; }
+    private Domain.Entities.Subscription? subscription { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        subscription = await currentSubscriptionService.GetAsync();
+        if (subscription is null)
+        {
+            return;
+        }
+
+        var state = (SubscriptionStateMachine.State)subscription!.SubscriptionStateId;
+        subscriptionManager = new SubscriptionManager(new SubscriptionStateMachine(state));
+
+        bool isExpired = calendarSimulator.GetCurrentDateTime() > subscription.ExpiredAt;
+        if (subscriptionManager.IsSubscriptionActive && isExpired)
+        {
+            subscriptionManager.StateMachine.Fire(SubscriptionStateMachine.Trigger.ExpireSubscription);
+
+            subscription.SubscriptionStateId = (short)subscriptionManager.CurrentState;
+            subscription.IsActive = false;
+            await subscriptionsService.UpdateAsync(subscription);
+
+            navigationManager.NavigateTo("/");
+        }
+    }
+
+}
